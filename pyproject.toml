@@ -1,0 +1,12 @@
+[project]
+name = "fastapi_ai"
+version = "0.1.0"
+description = "ИИ-генератор сайтов на FastAPI"
+readme = "README.md"
+requires-python = "==3.13.*"
+dependencies = [
+    "editorconfig-checker==3.2.1",
+    "fastapi[standard]==0.115.12",
+    "pre-commit>=4.3.0",
+    "ruff==0.11.13",
+]
