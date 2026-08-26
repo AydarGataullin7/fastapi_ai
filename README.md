@@ -1,6 +1,32 @@
-# FastAI
+# FastAI — ИИ-генератор сайтов
 
-## Репозиторий для бэкенд-разработчиков.
+## Требования
+- `Python 3.13`
+- `Git`
+- `Make`
+- `UV`
 
-Инструкции и справочная информация по разворачиванию локальной инсталляции собраны
-в документе [CONTRIBUTING.md](./CONTRIBUTING.md).
+## Установка и запуск
+
+1. Клонируйте репозиторий:
+   ```bash
+   git clone https://github.com/AydarGataullin7/fastapi_ai.git
+   cd fastapi_ai
+   ```
+Создайте виртуальное окружение и установите зависимости:
+
+```bash
+uv sync
+```
+Активируйте виртуальное окружение:
+
+```bash
+.\.venv\Scripts\activate   # Windows
+source .venv/bin/activate   # Linux/Mac
+```
+Запустите приложение:
+
+```bash
+fastapi dev src/main.py
+```
+Откройте в браузере: `http://127.0.0.1:8000/docs`
