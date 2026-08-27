@@ -24,7 +24,14 @@ def serve_settings():
 
 @app.get("/frontend-api/users/me")
 def get_current_user():
-    return {"username": "test_user", "email": "test@example.com"}
+    return {
+        "profileId": 1,
+        "email": "mock@user.com",
+        "username": "mock-user",
+        "registeredAt": "2025-06-15T18:29:56+00:00",
+        "updatedAt": "2025-06-15T18:29:56+00:00",
+        "isActive": True,
+    }
 
 
 @app.get("/vite.svg")
