@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -18,7 +18,7 @@ class UserProfileResponse(BaseModel):
 
 
 class CreateSiteRequest(BaseModel):
-    title: str = Field(..., min_length=1, max_length=100, description="Заголовок сайта")
+    title: str = Field(default="Без названия", min_length=1, max_length=100, description="Заголовок сайта")
     prompt: str = Field(..., min_length=1, description="Промт для генерации сайта")
 
 
@@ -478,10 +478,10 @@ def get_current_user():
 
 @app.get("/vite.svg")
 def serve_vite_icon():
-    return FileResponse(os.path(FRONTEND_DIR, "vite.svg"))
+    return FileResponse(os.path.join(FRONTEND_DIR, "vite.svg"))
 
 
-@app.post("/sites/create", response_model=CreateSiteResponse)
+@app.post("/frontend-api/sites/create", response_model=CreateSiteResponse)
 async def create_site(request: CreateSiteRequest):
     now = datetime.now()
     return CreateSiteResponse(
@@ -490,55 +490,61 @@ async def create_site(request: CreateSiteRequest):
         prompt=request.prompt,
         created_at=now,
         updated_at=now,
-        view_url="https://ya.ru",
-        download_url="https://ya.ru",
-        screenshot_url="https://ya.ru",
+        view_url="https://google.com",
+        download_url="https://google.com",
+        screenshot_url="https://google.com",
     )
 
 
-@app.post("/sites/{site_id}/generate")
-async def generate_site(site_id: int, request: GenerateSiteRequest):
+@app.post("/frontend-api/sites/{site_id}/generate")
+async def generate_site_post(site_id: int, request: GenerateSiteRequest):
     return StreamingResponse(generate_html_stream(), media_type="text/html")
 
 
-@app.get("/sites/my")
+@app.get("/frontend-api/sites/{site_id}/generate")
+async def generate_site_get(site_id: int):
+    return StreamingResponse(generate_html_stream(), media_type="text/html")
+
+
+@app.get("/frontend-api/sites/my")
 async def get_my_sites():
     now = datetime.now()
-    return [
+    sites = [
         {
             "id": 1,
             "title": "Сайт о стегозаврах",
             "prompt": "Сайт с информацией о стегозаврах, их питании и видах",
-            "created_at": now,
-            "updated_at": now,
-            "view_url": "https://ya.ru",
-            "download_url": "https://ya.ru",
-            "screenshot_url": "https://ya.ru",
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat(),
+            "view_url": "https://google.com",
+            "download_url": "https://google.com",
+            "screenshot_url": "https://google.com",
         },
         {
             "id": 2,
             "title": "Мой блог",
             "prompt": "Блог о программировании на Python",
-            "created_at": now,
-            "updated_at": now,
-            "view_url": "https://ya.ru",
-            "download_url": "https://ya.ru",
-            "screenshot_url": "https://ya.ru",
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat(),
+            "view_url": "https://google.com",
+            "download_url": "https://google.com",
+            "screenshot_url": "https://google.com",
         },
         {
             "id": 3,
             "title": "Портфолио",
             "prompt": "Мои работы и проекты",
-            "created_at": now,
-            "updated_at": now,
-            "view_url": "https://ya.ru",
-            "download_url": "https://ya.ru",
-            "screenshot_url": "https://ya.ru",
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat(),
+            "view_url": "https://google.com",
+            "download_url": "https://google.com",
+            "screenshot_url": "https://google.com",
         },
     ]
+    return JSONResponse(content={"sites": sites})
 
 
-@app.get("/sites/{site_id}")
+@app.get("/frontend-api/sites/{site_id}")
 async def get_site(site_id: int):
     now = datetime.now()
     return {
@@ -547,7 +553,7 @@ async def get_site(site_id: int):
         "prompt": "Сайт с информацией о стегозаврах, их питании и видах",
         "created_at": now,
         "updated_at": now,
-        "view_url": "https://ya.ru",
-        "download_url": "https://ya.ru",
-        "screenshot_url": "https://ya.ru",
+        "view_url": "https://google.com",
+        "download_url": "https://google.com",
+        "screenshot_url": "https://google.com",
     }
