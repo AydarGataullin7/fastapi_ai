@@ -5,6 +5,7 @@ from datetime import datetime
 import anyio
 import html_page_generator._html_page_generator as _hpg  # noqa: PLC2701
 import httpx
+from botocore.exceptions import ClientError
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -80,6 +81,8 @@ FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 
 app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIR, "assets")), name="assets")
 
+_last_prompt = ""
+
 
 async def generate_html(prompt: str) -> str:
     async with (
@@ -154,6 +157,9 @@ async def create_site(request: CreateSiteRequest):
 
 @app.post("/frontend-api/sites/{site_id}/generate")
 async def generate_site(site_id: int, request: GenerateSiteRequest):
+    global _last_prompt  # noqa: PLW0603
+    _last_prompt = request.prompt
+
     try:
         raw_html = await generate_html(request.prompt)
         html_code = _clean_html(raw_html)
@@ -161,22 +167,30 @@ async def generate_site(site_id: int, request: GenerateSiteRequest):
         with anyio.CancelScope(shield=True):
             with open("index.html", "w", encoding="utf-8") as file:
                 file.write(html_code)
+            try:
+                view_url = await upload_file_o_s3(
+                    file_path="index.html",
+                    key=f"sites/{site_id}/index.html",
+                    bucket=settings.minio_bucket,
+                    endpoint=settings.minio_endpoint,
+                    access_key=settings.minio_access_key,
+                    secret_key=settings.minio_secret_key,
+                    content_type="text/html",
+                    content_disposition="inline",
+                )
+                download_url = f'{view_url}?response-content-disposition=attachment'
+                status = "success"
+            except (ClientError, Exception) as e:
+                view_url = "/index.html"
+                download_url = "/index.html"
+                status = "saved_locally"
+                print(f"MinIO error: {e}")
 
-            view_url = await upload_file_o_s3(
-                file_path="index.html",
-                key=f"sites/{site_id}/index.html",
-                bucket=settings.minio_bucket,
-                endpoint=settings.minio_endpoint,
-                access_key=settings.minio_access_key,
-                secret_key=settings.minio_secret_key,
-                content_type="text/html",
-                content_disposition="inline",
-            )
-            download_url = f'{view_url}?response-content-disposition=attachment'
             return {
-                "status": "success",
+                "status": status,
                 "view_url": view_url,
                 "download_url": download_url,
+                "html_url": view_url,
             }
 
     except httpx.ConnectError:
@@ -194,36 +208,21 @@ async def generate_site(site_id: int, request: GenerateSiteRequest):
 @app.get("/frontend-api/sites/my")
 async def get_my_sites():
     now = datetime.now()
+    site_id = 1
+    view_url = f"http://localhost:9000/fastai/sites/{site_id}/index.html"
+    download_url = f"{view_url}?response-content-disposition=attachment"
+
     sites = [
         {
-            "id": 1,
-            "title": "Сайт о стегозаврах",
-            "prompt": "Сайт с информацией о стегозаврах, их питании и видах",
-            "created_at": now.isoformat(),
-            "updated_at": now.isoformat(),
-            "view_url": "https://google.com",
-            "download_url": "https://google.com",
-            "screenshot_url": "https://google.com",
-        },
-        {
-            "id": 2,
-            "title": "Мой блог",
-            "prompt": "Блог о программировании на Python",
-            "created_at": now.isoformat(),
-            "updated_at": now.isoformat(),
-            "view_url": "https://google.com",
-            "download_url": "https://google.com",
-            "screenshot_url": "https://google.com",
-        },
-        {
-            "id": 3,
-            "title": "Портфолио",
-            "prompt": "Мои работы и проекты",
-            "created_at": now.isoformat(),
-            "updated_at": now.isoformat(),
-            "view_url": "https://google.com",
-            "download_url": "https://google.com",
-            "screenshot_url": "https://google.com",
+            "id": site_id,
+            "title": _last_prompt,
+            "prompt": _last_prompt,
+            "urlPath": f"/sites/{site_id}",
+            "createdAt": now.isoformat(),
+            "updatedAt": now.isoformat(),
+            "htmlCodeUrl": view_url,
+            "htmlCodeDownloadUrl": download_url,
+            "screenshotUrl": None,
         },
     ]
     return JSONResponse(content={"sites": sites})
@@ -232,13 +231,17 @@ async def get_my_sites():
 @app.get("/frontend-api/sites/{site_id}")
 async def get_site(site_id: int):
     now = datetime.now()
+    view_url = f"http://localhost:9000/fastai/sites/{site_id}/index.html"
+    download_url = f"{view_url}?response-content-disposition=attachment"
+
     return {
         "id": site_id,
-        "title": "Сайт о стегозаврах",
-        "prompt": "Сайт с информацией о стегозаврах, их питании и видах",
-        "created_at": now,
-        "updated_at": now,
-        "view_url": "https://google.com",
-        "download_url": "https://google.com",
-        "screenshot_url": "https://google.com",
+        "title": _last_prompt,
+        "prompt": _last_prompt,
+        "urlPath": f"/sites/{site_id}",
+        "createdAt": now.isoformat(),
+        "updatedAt": now.isoformat(),
+        "htmlCodeUrl": view_url,
+        "htmlCodeDownloadUrl": download_url,
+        "screenshotUrl": None,
     }

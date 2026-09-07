@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     minio_secret_key: str
     minio_bucket: str = "fastapi"
     minio_secure: bool = False
+    minio_connect_timeout: int = Field(default=5, ge=1, description="Таймаут подключения к MinIO")
+    minio_read_timeout: int = Field(default=30, ge=1, description="Таймаут чтения из MinIO")
+    minio_max_connections: int = Field(default=10, ge=1, description="Лимит одновременных подключений к MinIO")
 
 
 settings = Settings()

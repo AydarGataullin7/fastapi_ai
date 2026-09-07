@@ -1,6 +1,8 @@
 import aioboto3
 from botocore.config import Config
 
+from src.env_settings import settings
+
 
 async def upload_file_o_s3(  # noqa: PLR0913, PLR0917
         file_path: str,
@@ -14,7 +16,13 @@ async def upload_file_o_s3(  # noqa: PLR0913, PLR0917
 ) -> str:
     with open(file_path, "rb") as f:
         file_content = f.read()
-    config = Config()
+    config = Config(
+        proxies={},
+        connect_timeout=settings.minio_connect_timeout,
+        read_timeout=settings.minio_read_timeout,
+        max_pool_connections=settings.minio_max_connections,
+        retries={"max_attempts": 2, "mode": "standard"},
+    )
     session = aioboto3.Session()
     async with session.client(
         "s3",

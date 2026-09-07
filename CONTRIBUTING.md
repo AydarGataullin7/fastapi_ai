@@ -33,6 +33,114 @@ Built for Windows32
 
 Все дальнейшие команды запускать из-под **git bash**.
 
+### Настройка MinIO (S3-совместимое хранилище)
+
+Для работы приложения требуется локальное S3-хранилище. Мы используем [MinIO](https://min.io/).
+
+#### Установка MinIO
+
+1. Скачайте исполняемый файл MinIO Server для вашей ОС:
+   - **Windows**: [minio.exe](https://dl.min.io/server/minio/release/windows-amd64/minio.exe)
+   - **macOS (Intel)**: [minio](https://dl.min.io/server/minio/release/darwin-amd64/minio)
+   - **macOS (Apple Silicon)**: [minio](https://dl.min.io/server/minio/release/darwin-arm64/minio)
+   - **Linux**: [minio](https://dl.min.io/server/minio/release/linux-amd64/minio)
+
+2. Поместите скачанный файл в корень проекта или удобную папку (например, `D:\minio\`).
+
+3. Создайте папку для хранения данных MinIO:
+   ```bash
+   mkdir D:\minio_data
+   ```
+
+#### Запуск MinIO
+Запустите сервер из терминала:
+```bash
+# Windows
+.\minio.exe server D:\minio_data --console-address :9001
+```
+```bash
+# macOS/Linux
+./minio server ~/minio-data --console-address :9001
+```
+После запуска вы увидите:
+```text
+API: http://127.0.0.1:9000
+Console: http://127.0.0.1:9001
+RootUser: minioadmin
+RootPass: minioadmin
+```
+`API`: используется приложением для загрузки файлов (`порт 9000`)
+
+`Console`: веб-интерфейс для управления бакетами (`порт 9001`)
+
+`Учетные данные`: `minioadmin` / `minioadmin` (по умолчанию)
+
+#### Настройка бакета
+1. Откройте веб-интерфейс:`http://127.0.0.1:9001`
+2. Войдите с логином `minioadmin` и паролем `minioadmin`.
+3. Нажмите `"Create Bucket"` и создайте бакет с именем `fastai`.
+4. Сделайте бакет публичным через командную строку (MinIO Client):
+
+- Скачайте MinIO Client (`mc`):
+   ```bash
+   # Windows
+   Invoke-WebRequest -Uri "https://dl.min.io/client/mc/release/windows-amd64/mc.exe" -OutFile "mc.exe"
+
+   # macOS/Linux
+   wget https://dl.min.io/client/mc/release/linux-amd64/mc
+   chmod +x mc
+   ```
+
+- Настройте алиас для подключения к MinIO:
+   ```bash
+   ./mc alias set myminio http://127.0.0.1:9000 minioadmin minioadmin
+   ```
+
+- Сделайте бакет `fastai` публичным:
+   ```bash
+   ./mc anonymous set public myminio/fastai
+   ```
+
+- Проверьте, что бакет стал публичным:
+   ```bash
+   ./mc anonymous get myminio/fastai
+   ```
+   Должно отобразиться `public`.
+
+```env
+MINIO_ENDPOINT=localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_BUCKET=fastai
+MINIO_SECURE=False
+```
+#### Проверка работы
+Проверьте, что `MinIO` доступен:
+```bash
+curl http://127.0.0.1:9000/minio/health/ready
+```
+Должен вернуться ответ `OK`.
+
+#### Первая ручная загрузка файла
+
+После настройки бакета загрузите в него тестовый файл вручную через веб-интерфейс. Это позволит:
+- Убедиться, что бакет доступен и публичный
+- Получить ссылку на файл для использования в эндпоинтах
+
+1. Откройте веб-интерфейс: `http://127.0.0.1:9001`
+2. Зайдите в бакет `fastai`
+3. Нажмите **"Upload"** и выберите любой файл (например, `test.html`)
+4. Скопируйте публичную ссылку на файл:
+   ```
+   http://127.0.0.1:9000/fastai/test.html
+   ```
+5. Откройте ссылку в браузере — файл должен открыться.
+
+Эта ссылка понадобится при реализации эндпоинтов, возвращающих URL-адреса файлов.
+
+#### Остановка `MinIO`
+Для остановки сервера нажмите `Ctrl+C` в терминале.
+
 ### Создание виртуального окружения для работы с IDE
 
 IDE для корректной работы подсказок необходимо развернуть виртуальное окружение со всеми установленными зависимостями.
