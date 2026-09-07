@@ -31,5 +31,12 @@ class Settings(BaseSettings):
     minio_read_timeout: int = Field(default=30, ge=1, description="Таймаут чтения из MinIO")
     minio_max_connections: int = Field(default=10, ge=1, description="Лимит одновременных подключений к MinIO")
 
+    gotenberg_url: str = "https://demo.gotenberg.dev"
+    gotenberg_width: int = 1280
+    gotenberg_format: str = "png"
+    gotenberg_timeout: int = Field(default=10, ge=1)
+    gotenberg_wait_delay: int = Field(default=8, ge=1)
+    gotenberg_max_connections: int = Field(default=5, ge=1, description="Лимит одновременных подключений к Gotenberg")
+
 
 settings = Settings()
