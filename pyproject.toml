@@ -11,4 +11,5 @@ dependencies = [
     "pre-commit>=4.3.0",
     "pydantic-settings>=2.15.0",
     "ruff==0.11.13",
+    "gotenberg-api @ git+https://github.com/devmanorg/gotenberg-api.git",
 ]
