@@ -14,7 +14,9 @@ from src.sites import router as sites_router
 print("📋 Настройки приложения:")
 print(json.dumps({
     "DEEPSEEK_MODEL": settings.deepseek_model,
+    "DEEPSEEK_MAX_CONNECTIONS": settings.deepseek_max_connections,
     "UNSPLASH_TIMEOUT": settings.unsplash_timeout,
+    "UNSPLASH_MAX_CONNECTIONS": settings.unsplash_max_connections,
     "MINIO_ENDPOINT": settings.minio_endpoint,
     "MINIO_BUCKET": settings.minio_bucket,
     "MINIO_ACCESS_KEY": "***",
@@ -33,9 +35,14 @@ print(json.dumps({
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    limits = httpx.Limits(
+        max_connections=settings.gotenberg_max_connections,
+        max_keepalive_connections=settings.gotenberg_max_connections,
+    )
     async with httpx.AsyncClient(
         base_url=settings.gotenberg_url,
         timeout=settings.gotenberg_timeout,
+        limits=limits,
     ) as gotenberg_client:
         app.state.gotenberg_client = gotenberg_client
         yield
