@@ -6,7 +6,7 @@ from datetime import datetime
 import anyio
 import html_page_generator._html_page_generator as _hpg  # noqa: PLC2701
 import httpx
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from gotenberg_api import GotenbergServerError, ScreenshotHTMLRequest
@@ -104,7 +104,11 @@ async def _generate_and_upload_screenshot(
             format=settings.gotenberg.format,
             wait_delay=settings.gotenberg.wait_delay,
         ).asend(gotenberg_client)
+    except GotenbergServerError as e:
+        logger.error("Gotenberg error: %s", e)
+        return None
 
+    try:
         screenshot_path = f"screenshot_{site_id}.png"
         with open(screenshot_path, "wb") as f:
             f.write(screenshot_bytes)
@@ -120,11 +124,8 @@ async def _generate_and_upload_screenshot(
         )
         os.remove(screenshot_path)
         return screenshot_url
-    except GotenbergServerError as e:
-        logger.error("Gotenberg error: %s", e)
-        return None
-    except Exception as e:
-        logger.error("Screenshot error: %s", e)
+    except (ClientError, BotoCoreError, OSError) as e:
+        logger.error("Screenshot upload error: %s", e)
         return None
 
 
@@ -174,7 +175,7 @@ async def generate_site(site_id: int, request: GenerateSiteRequest, http_request
                 )
                 download_url = f"{view_url}?response-content-disposition=attachment"
                 status = "success"
-            except (ClientError, Exception) as e:
+            except (ClientError, BotoCoreError, OSError) as e:
                 view_url = "/index.html"
                 download_url = "/index.html"
                 status = "saved_locally"
@@ -201,7 +202,7 @@ async def generate_site(site_id: int, request: GenerateSiteRequest, http_request
         if "Insufficient Balance" in str(e):
             raise HTTPException(402, "Недостаточно средств на балансе DeepSeek")
         raise HTTPException(500, f"Ошибка API: {str(e)}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(500, f"Ошибка генерации сайта: {str(e)}")
 
 
