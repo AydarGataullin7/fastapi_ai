@@ -1,4 +1,3 @@
-import json
 import os
 from contextlib import AsyncExitStack, asynccontextmanager
 
@@ -12,27 +11,6 @@ from fastapi.staticfiles import StaticFiles
 from src.env_settings import settings
 from src.schemas import UserProfileResponse
 from src.sites import router as sites_router
-
-print("📋 Настройки приложения:")
-print(json.dumps({
-    "DEEPSEEK_MODEL": settings.deepseek.model,
-    "DEEPSEEK_MAX_CONNECTIONS": settings.deepseek.max_connections,
-    "UNSPLASH_TIMEOUT": settings.unsplash.timeout,
-    "UNSPLASH_MAX_CONNECTIONS": settings.unsplash.max_connections,
-    "S3_ENDPOINT": settings.s3.endpoint,
-    "S3_BUCKET": settings.s3.bucket,
-    "S3_ACCESS_KEY": "***",
-    "S3_SECRET_KEY": "***",
-    "S3_CONNECT_TIMEOUT": settings.s3.connect_timeout,
-    "S3_READ_TIMEOUT": settings.s3.read_timeout,
-    "S3_MAX_CONNECTIONS": settings.s3.max_connections,
-    "GOTENBERG_URL": str(settings.gotenberg.url),
-    "GOTENBERG_WIDTH": settings.gotenberg.width,
-    "GOTENBERG_FORMAT": settings.gotenberg.format,
-    "GOTENBERG_WAIT_DELAY": settings.gotenberg.wait_delay,
-    "GOTENBERG_TIMEOUT": settings.gotenberg.timeout,
-    "GOTENBERG_MAX_CONNECTIONS": settings.gotenberg.max_connections,
-}, indent=2, ensure_ascii=False))
 
 
 @asynccontextmanager

@@ -1,4 +1,5 @@
 import functools
+import logging
 import os
 from datetime import datetime
 
@@ -16,6 +17,8 @@ from openai import APIStatusError
 from src.env_settings import settings
 from src.s3_client import upload_file_o_s3
 from src.schemas import CreateSiteRequest, CreateSiteResponse, GenerateSiteRequest
+
+logger = logging.getLogger(__name__)
 
 HTTP_500_INTERNAL_SERVER_ERROR = 500
 
@@ -118,10 +121,10 @@ async def _generate_and_upload_screenshot(
         os.remove(screenshot_path)
         return screenshot_url
     except GotenbergServerError as e:
-        print(f"Gotenberg error: {e}")
+        logger.error("Gotenberg error: %s", e)
         return None
     except Exception as e:
-        print(f"Screenshot error: {e}")
+        logger.error("Screenshot error: %s", e)
         return None
 
 
@@ -175,7 +178,7 @@ async def generate_site(site_id: int, request: GenerateSiteRequest, http_request
                 view_url = "/index.html"
                 download_url = "/index.html"
                 status = "saved_locally"
-                print(f"S3 error: {e}")
+                logger.error("S3 error: %s", e)
 
             screenshot_url = await _generate_and_upload_screenshot(
                 site_id, html_code, gotenberg_client, s3_client,
