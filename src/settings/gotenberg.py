@@ -1,4 +1,4 @@
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, AnyHttpUrl, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,12 +11,13 @@ class GotenbergSettings(BaseSettings):
         validate_default=True,
     )
 
-    url: str = Field(
+    url: AnyHttpUrl = Field(
         default="https://demo.gotenberg.dev",
         validation_alias=AliasChoices("GOTENBERG_URL", "gotenberg_url"),
     )
     width: int = Field(
         default=1280,
+        ge=1,
         validation_alias=AliasChoices("GOTENBERG_WIDTH", "gotenberg_width"),
     )
     format: str = Field(

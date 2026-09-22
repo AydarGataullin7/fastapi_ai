@@ -1,4 +1,4 @@
-from pydantic import AliasChoices, Field, SecretStr
+from pydantic import AliasChoices, AnyHttpUrl, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,8 +11,10 @@ class DeepSeekSettings(BaseSettings):
         validate_default=True,
     )
 
-    api_key: SecretStr = Field(validation_alias=AliasChoices("DEEPSEEK_API_KEY", "deepseek_api_key"))
-    base_url: str = Field(
+    api_key: SecretStr = Field(
+        validation_alias=AliasChoices("DEEPSEEK_API_KEY", "deepseek_api_key"),
+    )
+    base_url: AnyHttpUrl = Field(
         default="https://api.deepseek.com/v1",
         validation_alias=AliasChoices("DEEPSEEK_BASE_URL", "deepseek_base_url"),
     )

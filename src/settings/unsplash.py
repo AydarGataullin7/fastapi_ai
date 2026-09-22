@@ -11,7 +11,9 @@ class UnsplashSettings(BaseSettings):
         validate_default=True,
     )
 
-    token: SecretStr = Field(validation_alias=AliasChoices("UNSPLASH_TOKEN", "unsplash_token"))
+    token: SecretStr = Field(
+        validation_alias=AliasChoices("UNSPLASH_TOKEN", "unsplash_token"),
+    )
     max_connections: int = Field(
         default=5,
         gt=0,

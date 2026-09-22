@@ -24,7 +24,7 @@ print(json.dumps({
     "S3_CONNECT_TIMEOUT": settings.s3.connect_timeout,
     "S3_READ_TIMEOUT": settings.s3.read_timeout,
     "S3_MAX_CONNECTIONS": settings.s3.max_connections,
-    "GOTENBERG_URL": settings.gotenberg.url,
+    "GOTENBERG_URL": str(settings.gotenberg.url),
     "GOTENBERG_WIDTH": settings.gotenberg.width,
     "GOTENBERG_FORMAT": settings.gotenberg.format,
     "GOTENBERG_WAIT_DELAY": settings.gotenberg.wait_delay,
@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
         max_keepalive_connections=settings.gotenberg.max_connections,
     )
     async with httpx.AsyncClient(
-        base_url=settings.gotenberg.url,
+        base_url=str(settings.gotenberg.url),
         timeout=settings.gotenberg.timeout,
         limits=limits,
     ) as gotenberg_client:

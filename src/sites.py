@@ -65,12 +65,12 @@ async def _generate_html(prompt: str) -> str:
             limits=unsplash_limits,
         ),
         AsyncDeepseekClient.setup(
-            settings.deepseek.api_key.get_secret_value(),
-            settings.deepseek.base_url,
-            settings.deepseek.model,
-            timeout=300,
-            limits=deepseek_limits,
-        ),
+        settings.deepseek.api_key.get_secret_value(),
+        str(settings.deepseek.base_url),
+        settings.deepseek.model,
+        timeout=300,
+        limits=deepseek_limits,
+    ),
     ):
         generator = AsyncPageGenerator(debug_mode=True)
 

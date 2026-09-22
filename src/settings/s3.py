@@ -1,4 +1,4 @@
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -60,3 +60,13 @@ class S3Settings(BaseSettings):
             "S3_MAX_CONNECTIONS", "MINIO_MAX_CONNECTIONS", "s3_max_connections", "minio_max_connections",
         ),
     )
+
+    @field_validator("endpoint")
+    @classmethod
+    def validate_endpoint(cls, v: str) -> str:
+        if ":" not in v:
+            raise ValueError("Endpoint must be in format 'host:port'")
+        host, port = v.rsplit(":", 1)
+        if not host or not port.isdigit():
+            raise ValueError("Endpoint must be in format 'host:port'")
+        return v
