@@ -18,9 +18,9 @@ async def upload_file_o_s3(  # noqa: PLR0913, PLR0917
         file_content = f.read()
     config = Config(
         proxies={},
-        connect_timeout=settings.minio.connect_timeout,
-        read_timeout=settings.minio.read_timeout,
-        max_pool_connections=settings.minio.max_connections,
+        connect_timeout=settings.s3.connect_timeout,
+        read_timeout=settings.s3.read_timeout,
+        max_pool_connections=settings.s3.max_connections,
         retries={"max_attempts": 2, "mode": "standard"},
     )
     session = aioboto3.Session()

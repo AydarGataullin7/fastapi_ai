@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.settings.deepseek import DeepSeekSettings
 from src.settings.gotenberg import GotenbergSettings
-from src.settings.minio import MinioSettings
+from src.settings.s3 import S3Settings
 from src.settings.unsplash import UnsplashSettings
 
 
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     deepseek: DeepSeekSettings = Field(default_factory=DeepSeekSettings)
     unsplash: UnsplashSettings = Field(default_factory=UnsplashSettings)
-    minio: MinioSettings = Field(default_factory=MinioSettings)
+    s3: S3Settings = Field(default_factory=S3Settings)
     gotenberg: GotenbergSettings = Field(default_factory=GotenbergSettings)
 
 

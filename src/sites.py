@@ -108,10 +108,10 @@ async def _generate_and_upload_screenshot(
         screenshot_url = await upload_file_o_s3(
             file_path=screenshot_path,
             key=f"sites/{site_id}/screenshot.png",
-            bucket=settings.minio.bucket,
-            endpoint=settings.minio.endpoint,
-            access_key=settings.minio.access_key,
-            secret_key=settings.minio.secret_key,
+            bucket=settings.s3.bucket,
+            endpoint=settings.s3.endpoint,
+            access_key=settings.s3.access_key,
+            secret_key=settings.s3.secret_key,
             content_type="image/png",
             content_disposition="inline",
         )
@@ -160,10 +160,10 @@ async def generate_site(site_id: int, request: GenerateSiteRequest, http_request
                 view_url = await upload_file_o_s3(
                     file_path="index.html",
                     key=f"sites/{site_id}/index.html",
-                    bucket=settings.minio.bucket,
-                    endpoint=settings.minio.endpoint,
-                    access_key=settings.minio.access_key,
-                    secret_key=settings.minio.secret_key,
+                    bucket=settings.s3.bucket,
+                    endpoint=settings.s3.endpoint,
+                    access_key=settings.s3.access_key,
+                    secret_key=settings.s3.secret_key,
                     content_type="text/html",
                     content_disposition="inline",
                 )
@@ -173,7 +173,7 @@ async def generate_site(site_id: int, request: GenerateSiteRequest, http_request
                 view_url = "/index.html"
                 download_url = "/index.html"
                 status = "saved_locally"
-                print(f"MinIO error: {e}")
+                print(f"S3 error: {e}")
 
             gotenberg_client = http_request.app.state.gotenberg_client
             screenshot_url = await _generate_and_upload_screenshot(site_id, html_code, gotenberg_client)
