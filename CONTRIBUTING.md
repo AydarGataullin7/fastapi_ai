@@ -141,6 +141,46 @@ curl http://127.0.0.1:9000/minio/health/ready
 #### Остановка `MinIO`
 Для остановки сервера нажмите `Ctrl+C` в терминале.
 
+### Настройка Gotenberg (генерация скриншотов)
+
+Для генерации скриншотов сгенерированных сайтов используется публичное Demo API [Gotenberg](https://gotenberg.dev/).
+
+#### Переменные окружения
+
+Добавьте в `.env`:
+
+```env
+GOTENBERG_URL=https://demo.gotenberg.dev
+GOTENBERG_WIDTH=1024
+GOTENBERG_FORMAT=png
+GOTENBERG_WAIT_DELAY=5
+GOTENBERG_TIMEOUT=60
+GOTENBERG_MAX_CONNECTIONS=5
+```
+
+| Переменная | Описание | Обязательная |
+|------------|----------|--------------|
+| `GOTENBERG_URL` | URL API Gotenberg | Да |
+| `GOTENBERG_WIDTH` | Ширина скриншота в пикселях | Нет |
+| `GOTENBERG_FORMAT` | Формат изображения (`png`, `jpeg`, `webp`) | Нет |
+| `GOTENBERG_WAIT_DELAY` | Задержка для анимаций (сек) | Нет |
+| `GOTENBERG_TIMEOUT` | Таймаут запроса (сек) | Нет |
+| `GOTENBERG_MAX_CONNECTIONS` | Лимит одновременных подключений | Нет |
+
+#### Проверка работы
+
+Проверьте, что сервис доступен:
+
+```bash
+curl https://demo.gotenberg.dev/health
+```
+
+Должен вернуться ответ:
+
+```json
+{"status":"up","details":{"chromium":{"status":"up"},"libreoffice":{"status":"up"}}}
+```
+
 ### Создание виртуального окружения для работы с IDE
 
 IDE для корректной работы подсказок необходимо развернуть виртуальное окружение со всеми установленными зависимостями.
