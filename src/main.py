@@ -9,12 +9,15 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.env_settings import settings
+from src.patches import apply_patches
 from src.schemas import UserProfileResponse
 from src.sites import router as sites_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    apply_patches()
+
     async with AsyncExitStack() as stack:
         limits = httpx.Limits(
             max_connections=settings.gotenberg.max_connections,

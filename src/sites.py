@@ -1,17 +1,14 @@
 import asyncio
-import functools
 import logging
 import os
 from datetime import datetime
 
-import html_page_generator._html_page_generator as _hpg  # noqa: PLC2701
 import httpx
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from gotenberg_api import GotenbergServerError, ScreenshotHTMLRequest
 from html_page_generator import AsyncDeepseekClient, AsyncPageGenerator, AsyncUnsplashClient
-from langchain_deepseek import ChatDeepSeek
 
 from src.env_settings import settings
 from src.s3_client import upload_file_o_s3
@@ -20,8 +17,6 @@ from src.schemas import CreateSiteRequest, CreateSiteResponse, GenerateSiteReque
 logger = logging.getLogger(__name__)
 
 HTTP_500_INTERNAL_SERVER_ERROR = 500
-
-_hpg.ChatDeepSeek = functools.partial(ChatDeepSeek, max_tokens=65536)
 
 _last_prompt = ""
 _last_screenshot_url: str | None = None
@@ -34,20 +29,6 @@ def _clean_html(content: str) -> str:
     if start == -1:
         return content
     return content[start:]
-
-
-_original_get_images = _hpg.get_images
-
-
-async def _safe_get_images(keywords: list[str]) -> list[str]:
-    query = keywords[0] if keywords else "abstract"
-    try:
-        return await _original_get_images([query])
-    except httpx.HTTPStatusError:
-        return []
-
-
-_hpg.get_images = _safe_get_images
 
 
 async def _generate_and_upload_screenshot(
