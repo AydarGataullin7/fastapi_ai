@@ -1,8 +1,10 @@
 import json
 import os
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 
+import aioboto3
 import httpx
+from botocore.config import Config
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -35,16 +37,39 @@ print(json.dumps({
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    limits = httpx.Limits(
-        max_connections=settings.gotenberg.max_connections,
-        max_keepalive_connections=settings.gotenberg.max_connections,
-    )
-    async with httpx.AsyncClient(
-        base_url=str(settings.gotenberg.url),
-        timeout=settings.gotenberg.timeout,
-        limits=limits,
-    ) as gotenberg_client:
+    async with AsyncExitStack() as stack:
+        limits = httpx.Limits(
+            max_connections=settings.gotenberg.max_connections,
+            max_keepalive_connections=settings.gotenberg.max_connections,
+        )
+        gotenberg_client = await stack.enter_async_context(
+            httpx.AsyncClient(
+                base_url=str(settings.gotenberg.url),
+                timeout=settings.gotenberg.timeout,
+                limits=limits,
+            ),
+        )
         app.state.gotenberg_client = gotenberg_client
+
+        s3_config = Config(
+            proxies={},
+            connect_timeout=settings.s3.connect_timeout,
+            read_timeout=settings.s3.read_timeout,
+            max_pool_connections=settings.s3.max_connections,
+            retries={"max_attempts": 2, "mode": "standard"},
+        )
+        s3_session = aioboto3.Session()
+        s3_client = await stack.enter_async_context(
+            s3_session.client(
+                "s3",
+                endpoint_url=f"http://{settings.s3.endpoint}",
+                aws_access_key_id=settings.s3.access_key,
+                aws_secret_access_key=settings.s3.secret_key,
+                config=s3_config,
+            ),
+        )
+        app.state.s3_client = s3_client
+
         yield
 
 

@@ -65,12 +65,12 @@ async def _generate_html(prompt: str) -> str:
             limits=unsplash_limits,
         ),
         AsyncDeepseekClient.setup(
-        settings.deepseek.api_key.get_secret_value(),
-        str(settings.deepseek.base_url),
-        settings.deepseek.model,
-        timeout=300,
-        limits=deepseek_limits,
-    ),
+            settings.deepseek.api_key.get_secret_value(),
+            str(settings.deepseek.base_url),
+            settings.deepseek.model,
+            timeout=300,
+            limits=deepseek_limits,
+        ),
     ):
         generator = AsyncPageGenerator(debug_mode=True)
 
@@ -92,6 +92,7 @@ async def _generate_and_upload_screenshot(
     site_id: int,
     html_code: str,
     gotenberg_client: httpx.AsyncClient,
+    s3_client,
 ) -> str | None:
     try:
         screenshot_bytes = await ScreenshotHTMLRequest(
@@ -106,12 +107,11 @@ async def _generate_and_upload_screenshot(
             f.write(screenshot_bytes)
 
         screenshot_url = await upload_file_o_s3(
+            client=s3_client,
             file_path=screenshot_path,
             key=f"sites/{site_id}/screenshot.png",
             bucket=settings.s3.bucket,
             endpoint=settings.s3.endpoint,
-            access_key=settings.s3.access_key,
-            secret_key=settings.s3.secret_key,
             content_type="image/png",
             content_disposition="inline",
         )
@@ -152,18 +152,20 @@ async def generate_site(site_id: int, request: GenerateSiteRequest, http_request
         raw_html = await _generate_html(request.prompt)
         html_code = _clean_html(raw_html)
 
+        s3_client = http_request.app.state.s3_client
+        gotenberg_client = http_request.app.state.gotenberg_client
+
         with anyio.CancelScope(shield=True):
             with open("index.html", "w", encoding="utf-8") as file:
                 file.write(html_code)
 
             try:
                 view_url = await upload_file_o_s3(
+                    client=s3_client,
                     file_path="index.html",
                     key=f"sites/{site_id}/index.html",
                     bucket=settings.s3.bucket,
                     endpoint=settings.s3.endpoint,
-                    access_key=settings.s3.access_key,
-                    secret_key=settings.s3.secret_key,
                     content_type="text/html",
                     content_disposition="inline",
                 )
@@ -175,8 +177,9 @@ async def generate_site(site_id: int, request: GenerateSiteRequest, http_request
                 status = "saved_locally"
                 print(f"S3 error: {e}")
 
-            gotenberg_client = http_request.app.state.gotenberg_client
-            screenshot_url = await _generate_and_upload_screenshot(site_id, html_code, gotenberg_client)
+            screenshot_url = await _generate_and_upload_screenshot(
+                site_id, html_code, gotenberg_client, s3_client,
+            )
             _last_screenshot_url = screenshot_url
 
             return {
