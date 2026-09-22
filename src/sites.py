@@ -49,16 +49,27 @@ _hpg.get_images = _safe_get_images
 
 
 async def _generate_html(prompt: str) -> str:
+    deepseek_limits = httpx.Limits(
+        max_connections=settings.deepseek.max_connections,
+        max_keepalive_connections=settings.deepseek.max_connections,
+    )
+    unsplash_limits = httpx.Limits(
+        max_connections=settings.unsplash.max_connections,
+        max_keepalive_connections=settings.unsplash.max_connections,
+    )
+
     async with (
         AsyncUnsplashClient.setup(
-            settings.unsplash_token.get_secret_value(),
+            settings.unsplash.token.get_secret_value(),
             timeout=60,
+            limits=unsplash_limits,
         ),
         AsyncDeepseekClient.setup(
-            settings.deepseek_api_key.get_secret_value(),
-            settings.deepseek_base_url,
-            settings.deepseek_model,
+            settings.deepseek.api_key.get_secret_value(),
+            settings.deepseek.base_url,
+            settings.deepseek.model,
             timeout=300,
+            limits=deepseek_limits,
         ),
     ):
         generator = AsyncPageGenerator(debug_mode=True)
@@ -85,9 +96,9 @@ async def _generate_and_upload_screenshot(
     try:
         screenshot_bytes = await ScreenshotHTMLRequest(
             index_html=html_code,
-            width=settings.gotenberg_width,
-            format=settings.gotenberg_format,
-            wait_delay=settings.gotenberg_wait_delay,
+            width=settings.gotenberg.width,
+            format=settings.gotenberg.format,
+            wait_delay=settings.gotenberg.wait_delay,
         ).asend(gotenberg_client)
 
         screenshot_path = f"screenshot_{site_id}.png"
@@ -97,10 +108,10 @@ async def _generate_and_upload_screenshot(
         screenshot_url = await upload_file_o_s3(
             file_path=screenshot_path,
             key=f"sites/{site_id}/screenshot.png",
-            bucket=settings.minio_bucket,
-            endpoint=settings.minio_endpoint,
-            access_key=settings.minio_access_key,
-            secret_key=settings.minio_secret_key,
+            bucket=settings.minio.bucket,
+            endpoint=settings.minio.endpoint,
+            access_key=settings.minio.access_key,
+            secret_key=settings.minio.secret_key,
             content_type="image/png",
             content_disposition="inline",
         )
@@ -149,10 +160,10 @@ async def generate_site(site_id: int, request: GenerateSiteRequest, http_request
                 view_url = await upload_file_o_s3(
                     file_path="index.html",
                     key=f"sites/{site_id}/index.html",
-                    bucket=settings.minio_bucket,
-                    endpoint=settings.minio_endpoint,
-                    access_key=settings.minio_access_key,
-                    secret_key=settings.minio_secret_key,
+                    bucket=settings.minio.bucket,
+                    endpoint=settings.minio.endpoint,
+                    access_key=settings.minio.access_key,
+                    secret_key=settings.minio.secret_key,
                     content_type="text/html",
                     content_disposition="inline",
                 )

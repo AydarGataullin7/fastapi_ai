@@ -13,35 +13,35 @@ from src.sites import router as sites_router
 
 print("📋 Настройки приложения:")
 print(json.dumps({
-    "DEEPSEEK_MODEL": settings.deepseek_model,
-    "DEEPSEEK_MAX_CONNECTIONS": settings.deepseek_max_connections,
-    "UNSPLASH_TIMEOUT": settings.unsplash_timeout,
-    "UNSPLASH_MAX_CONNECTIONS": settings.unsplash_max_connections,
-    "MINIO_ENDPOINT": settings.minio_endpoint,
-    "MINIO_BUCKET": settings.minio_bucket,
+    "DEEPSEEK_MODEL": settings.deepseek.model,
+    "DEEPSEEK_MAX_CONNECTIONS": settings.deepseek.max_connections,
+    "UNSPLASH_TIMEOUT": settings.unsplash.timeout,
+    "UNSPLASH_MAX_CONNECTIONS": settings.unsplash.max_connections,
+    "MINIO_ENDPOINT": settings.minio.endpoint,
+    "MINIO_BUCKET": settings.minio.bucket,
     "MINIO_ACCESS_KEY": "***",
     "MINIO_SECRET_KEY": "***",
-    "MINIO_CONNECT_TIMEOUT": settings.minio_connect_timeout,
-    "MINIO_READ_TIMEOUT": settings.minio_read_timeout,
-    "MINIO_MAX_CONNECTIONS": settings.minio_max_connections,
-    "GOTENBERG_URL": settings.gotenberg_url,
-    "GOTENBERG_WIDTH": settings.gotenberg_width,
-    "GOTENBERG_FORMAT": settings.gotenberg_format,
-    "GOTENBERG_WAIT_DELAY": settings.gotenberg_wait_delay,
-    "GOTENBERG_TIMEOUT": settings.gotenberg_timeout,
-    "GOTENBERG_MAX_CONNECTIONS": settings.gotenberg_max_connections,
+    "MINIO_CONNECT_TIMEOUT": settings.minio.connect_timeout,
+    "MINIO_READ_TIMEOUT": settings.minio.read_timeout,
+    "MINIO_MAX_CONNECTIONS": settings.minio.max_connections,
+    "GOTENBERG_URL": settings.gotenberg.url,
+    "GOTENBERG_WIDTH": settings.gotenberg.width,
+    "GOTENBERG_FORMAT": settings.gotenberg.format,
+    "GOTENBERG_WAIT_DELAY": settings.gotenberg.wait_delay,
+    "GOTENBERG_TIMEOUT": settings.gotenberg.timeout,
+    "GOTENBERG_MAX_CONNECTIONS": settings.gotenberg.max_connections,
 }, indent=2, ensure_ascii=False))
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     limits = httpx.Limits(
-        max_connections=settings.gotenberg_max_connections,
-        max_keepalive_connections=settings.gotenberg_max_connections,
+        max_connections=settings.gotenberg.max_connections,
+        max_keepalive_connections=settings.gotenberg.max_connections,
     )
     async with httpx.AsyncClient(
-        base_url=settings.gotenberg_url,
-        timeout=settings.gotenberg_timeout,
+        base_url=settings.gotenberg.url,
+        timeout=settings.gotenberg.timeout,
         limits=limits,
     ) as gotenberg_client:
         app.state.gotenberg_client = gotenberg_client
