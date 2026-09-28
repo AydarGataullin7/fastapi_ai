@@ -18,9 +18,6 @@ logger = logging.getLogger(__name__)
 
 HTTP_500_INTERNAL_SERVER_ERROR = 500
 
-_last_prompt = ""
-_last_screenshot_url: str | None = None
-
 
 def _clean_html(content: str) -> str:
     start = content.find("<!DOCTYPE html>")
@@ -70,13 +67,12 @@ async def _generate_and_upload_screenshot(
 
 
 async def _upload_site_after_generation(
+    state,
     site_id: int,
     html_code: str,
     gotenberg_client: httpx.AsyncClient,
     s3_client,
 ) -> None:
-    global _last_screenshot_url  # noqa: PLW0603
-
     try:
         with open("index.html", "w", encoding="utf-8") as file:
             file.write(html_code)
@@ -100,17 +96,17 @@ async def _upload_site_after_generation(
     screenshot_url = await _generate_and_upload_screenshot(
         site_id, html_code, gotenberg_client, s3_client,
     )
-    _last_screenshot_url = screenshot_url
+    state.last_screenshot_url = screenshot_url
 
 
 async def generate_site_stream(
+    state,
     site_id: int,
     prompt: str,
     gotenberg_client: httpx.AsyncClient,
     s3_client,
 ):
-    global _last_prompt  # noqa: PLW0603
-    _last_prompt = prompt
+    state.last_prompt = prompt
 
     deepseek_limits = httpx.Limits(
         max_connections=settings.deepseek.max_connections,
@@ -159,7 +155,7 @@ async def generate_site_stream(
 
     background_task = asyncio.create_task(
         _upload_site_after_generation(
-            site_id, html_code, gotenberg_client, s3_client,
+            state, site_id, html_code, gotenberg_client, s3_client,
         ),
     )
     await background_task
@@ -189,48 +185,52 @@ async def generate_site(site_id: int, request: GenerateSiteRequest, http_request
     gotenberg_client = http_request.app.state.gotenberg_client
 
     return StreamingResponse(
-        generate_site_stream(site_id, request.prompt, gotenberg_client, s3_client),
+        generate_site_stream(
+            http_request.app.state, site_id, request.prompt, gotenberg_client, s3_client,
+        ),
         media_type="text/plain",
     )
 
 
 @router.get("/sites/my")
-async def get_my_sites():
+async def get_my_sites(http_request: Request):
     now = datetime.now()
     site_id = 1
     view_url = f"http://localhost:9000/fastai/sites/{site_id}/index.html"
     download_url = f"{view_url}?response-content-disposition=attachment"
 
+    state = http_request.app.state
     sites = [
         {
             "id": site_id,
-            "title": _last_prompt,
-            "prompt": _last_prompt,
+            "title": state.last_prompt,
+            "prompt": state.last_prompt,
             "urlPath": f"/sites/{site_id}",
             "createdAt": now.isoformat(),
             "updatedAt": now.isoformat(),
             "htmlCodeUrl": view_url,
             "htmlCodeDownloadUrl": download_url,
-            "screenshotUrl": _last_screenshot_url,
+            "screenshotUrl": state.last_screenshot_url,
         },
     ]
     return JSONResponse(content={"sites": sites})
 
 
 @router.get("/sites/{site_id}")
-async def get_site(site_id: int):
+async def get_site(site_id: int, http_request: Request):
     now = datetime.now()
     view_url = f"http://localhost:9000/fastai/sites/{site_id}/index.html"
     download_url = f"{view_url}?response-content-disposition=attachment"
 
+    state = http_request.app.state
     return {
         "id": site_id,
-        "title": _last_prompt,
-        "prompt": _last_prompt,
+        "title": state.last_prompt,
+        "prompt": state.last_prompt,
         "urlPath": f"/sites/{site_id}",
         "createdAt": now.isoformat(),
         "updatedAt": now.isoformat(),
         "htmlCodeUrl": view_url,
         "htmlCodeDownloadUrl": download_url,
-        "screenshotUrl": _last_screenshot_url,
+        "screenshotUrl": state.last_screenshot_url,
     }

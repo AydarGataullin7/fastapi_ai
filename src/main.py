@@ -18,6 +18,9 @@ from src.sites import router as sites_router
 async def lifespan(app: FastAPI):
     apply_patches()
 
+    app.state.last_prompt = ""
+    app.state.last_screenshot_url = None
+
     async with AsyncExitStack() as stack:
         limits = httpx.Limits(
             max_connections=settings.gotenberg.max_connections,
