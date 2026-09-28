@@ -5,10 +5,10 @@ import aioboto3
 import httpx
 from botocore.config import Config
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.env_settings import settings
+from src.pages import router as pages_router
 from src.patches import apply_patches
 from src.schemas import UserProfileResponse
 from src.sites import router as sites_router
@@ -61,22 +61,8 @@ FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 
 app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIR, "assets")), name="assets")
 
+app.include_router(pages_router)
 app.include_router(sites_router, prefix="/frontend-api", tags=["sites"])
-
-
-@app.get("/")
-def serve_index():
-    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
-
-
-@app.get("/frontend-settings.json")
-def serve_settings():
-    return FileResponse(os.path.join(FRONTEND_DIR, "frontend-settings.json"))
-
-
-@app.get("/vite.svg")
-def serve_vite_icon():
-    return FileResponse(os.path.join(FRONTEND_DIR, "vite.svg"))
 
 
 @app.get("/frontend-api/users/me", response_model=UserProfileResponse)
