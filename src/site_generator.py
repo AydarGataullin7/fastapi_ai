@@ -14,6 +14,19 @@ logger = logging.getLogger(__name__)
 HTTP_500_INTERNAL_SERVER_ERROR = 500
 
 
+def _chunk_to_str(chunk) -> str:
+    if isinstance(chunk, str):
+        return chunk
+    if isinstance(chunk, list):
+        return "".join(_chunk_to_str(item) for item in chunk)
+    if hasattr(chunk, "content"):
+        content = chunk.content
+        if isinstance(content, str):
+            return content
+        return str(content)
+    return str(chunk)
+
+
 def _clean_html(content: str) -> str:
     start = content.find("<!DOCTYPE html>")
     if start == -1:
@@ -103,26 +116,21 @@ async def generate_site_stream(
 ):
     state.last_prompt = prompt
 
-    chunks: list[str] = []
-
     generator = AsyncPageGenerator(debug_mode=True)
 
     try:
         async for chunk in generator(prompt):
-            chunks.append(chunk)
-            yield chunk
+            yield _chunk_to_str(chunk)
     except httpx.HTTPStatusError as e:
         if e.response.status_code == HTTP_500_INTERNAL_SERVER_ERROR:
             simple_prompt = prompt.split(maxsplit=1)[0] if prompt.split() else "site"
             generator = AsyncPageGenerator(debug_mode=True)
             async for chunk in generator(simple_prompt):
-                chunks.append(chunk)
-                yield chunk
+                yield _chunk_to_str(chunk)
         else:
             raise
 
-    raw_html = "".join(chunks)
-    html_code = _clean_html(raw_html)
+    html_code = _clean_html(generator.html_page.html_code)
 
     await _upload_site_after_generation(
         state, site_id, html_code, gotenberg_client, s3_client,
