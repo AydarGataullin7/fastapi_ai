@@ -4,7 +4,7 @@ import os
 import httpx
 from botocore.exceptions import BotoCoreError, ClientError
 from gotenberg_api import GotenbergServerError, ScreenshotHTMLRequest
-from html_page_generator import AsyncDeepseekClient, AsyncPageGenerator, AsyncUnsplashClient
+from html_page_generator import AsyncPageGenerator
 
 from src.env_settings import settings
 from src.s3_client import upload_file_o_s3
@@ -103,46 +103,23 @@ async def generate_site_stream(
 ):
     state.last_prompt = prompt
 
-    deepseek_limits = httpx.Limits(
-        max_connections=settings.deepseek.max_connections,
-        max_keepalive_connections=settings.deepseek.max_connections,
-    )
-    unsplash_limits = httpx.Limits(
-        max_connections=settings.unsplash.max_connections,
-        max_keepalive_connections=settings.unsplash.max_connections,
-    )
-
     chunks: list[str] = []
 
-    async with (
-        AsyncUnsplashClient.setup(
-            settings.unsplash.token.get_secret_value(),
-            timeout=60,
-            limits=unsplash_limits,
-        ),
-        AsyncDeepseekClient.setup(
-            settings.deepseek.api_key.get_secret_value(),
-            str(settings.deepseek.base_url),
-            settings.deepseek.model,
-            timeout=300,
-            limits=deepseek_limits,
-        ),
-    ):
-        generator = AsyncPageGenerator(debug_mode=True)
+    generator = AsyncPageGenerator(debug_mode=True)
 
-        try:
-            async for chunk in generator(prompt):
+    try:
+        async for chunk in generator(prompt):
+            chunks.append(chunk)
+            yield chunk
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == HTTP_500_INTERNAL_SERVER_ERROR:
+            simple_prompt = prompt.split(maxsplit=1)[0] if prompt.split() else "site"
+            generator = AsyncPageGenerator(debug_mode=True)
+            async for chunk in generator(simple_prompt):
                 chunks.append(chunk)
                 yield chunk
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == HTTP_500_INTERNAL_SERVER_ERROR:
-                simple_prompt = prompt.split(maxsplit=1)[0] if prompt.split() else "site"
-                generator = AsyncPageGenerator(debug_mode=True)
-                async for chunk in generator(simple_prompt):
-                    chunks.append(chunk)
-                    yield chunk
-            else:
-                raise
+        else:
+            raise
 
     raw_html = "".join(chunks)
     html_code = _clean_html(raw_html)

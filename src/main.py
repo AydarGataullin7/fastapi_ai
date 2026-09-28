@@ -6,6 +6,7 @@ import httpx
 from botocore.config import Config
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from html_page_generator import AsyncDeepseekClient, AsyncUnsplashClient
 
 from src.env_settings import settings
 from src.pages import router as pages_router
@@ -22,7 +23,7 @@ async def lifespan(app: FastAPI):
     app.state.last_screenshot_url = None
 
     async with AsyncExitStack() as stack:
-        limits = httpx.Limits(
+        gotenberg_limits = httpx.Limits(
             max_connections=settings.gotenberg.max_connections,
             max_keepalive_connections=settings.gotenberg.max_connections,
         )
@@ -30,10 +31,36 @@ async def lifespan(app: FastAPI):
             httpx.AsyncClient(
                 base_url=str(settings.gotenberg.url),
                 timeout=settings.gotenberg.timeout,
-                limits=limits,
+                limits=gotenberg_limits,
             ),
         )
         app.state.gotenberg_client = gotenberg_client
+
+        deepseek_limits = httpx.Limits(
+            max_connections=settings.deepseek.max_connections,
+            max_keepalive_connections=settings.deepseek.max_connections,
+        )
+        await stack.enter_async_context(
+            AsyncDeepseekClient.setup(
+                settings.deepseek.api_key.get_secret_value(),
+                str(settings.deepseek.base_url),
+                settings.deepseek.model,
+                timeout=300,
+                limits=deepseek_limits,
+            ),
+        )
+
+        unsplash_limits = httpx.Limits(
+            max_connections=settings.unsplash.max_connections,
+            max_keepalive_connections=settings.unsplash.max_connections,
+        )
+        await stack.enter_async_context(
+            AsyncUnsplashClient.setup(
+                settings.unsplash.token.get_secret_value(),
+                timeout=60,
+                limits=unsplash_limits,
+            ),
+        )
 
         s3_config = Config(
             proxies={},
