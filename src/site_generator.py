@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 
@@ -114,7 +113,6 @@ async def generate_site_stream(
     )
 
     chunks: list[str] = []
-    background_task: asyncio.Task | None = None
 
     async with (
         AsyncUnsplashClient.setup(
@@ -149,9 +147,6 @@ async def generate_site_stream(
     raw_html = "".join(chunks)
     html_code = _clean_html(raw_html)
 
-    background_task = asyncio.create_task(
-        _upload_site_after_generation(
-            state, site_id, html_code, gotenberg_client, s3_client,
-        ),
+    await _upload_site_after_generation(
+        state, site_id, html_code, gotenberg_client, s3_client,
     )
-    await background_task
