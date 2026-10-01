@@ -1,5 +1,4 @@
 import logging
-import os
 
 import httpx
 from botocore.exceptions import BotoCoreError, ClientError
@@ -54,22 +53,17 @@ async def _generate_and_upload_screenshot(
         return None
 
     try:
-        screenshot_path = f"screenshot_{site_id}.png"
-        with open(screenshot_path, "wb") as f:
-            f.write(screenshot_bytes)
-
         screenshot_url = await upload_file_o_s3(
             client=s3_client,
-            file_path=screenshot_path,
+            body=screenshot_bytes,
             key=f"sites/{site_id}/screenshot.png",
             bucket=settings.s3.bucket,
             endpoint=settings.s3.endpoint,
             content_type="image/png",
             content_disposition="inline",
         )
-        os.remove(screenshot_path)
         return screenshot_url
-    except (ClientError, BotoCoreError, OSError) as e:
+    except (ClientError, BotoCoreError) as e:
         logger.error("Screenshot upload error: %s", e)
         return None
 
@@ -82,23 +76,16 @@ async def _upload_site_after_generation(
     s3_client,
 ) -> None:
     try:
-        with open("index.html", "w", encoding="utf-8") as file:
-            file.write(html_code)
-    except OSError as e:
-        logger.error("Failed to write index.html: %s", e)
-        return
-
-    try:
         await upload_file_o_s3(
             client=s3_client,
-            file_path="index.html",
+            body=html_code.encode("utf-8"),
             key=f"sites/{site_id}/index.html",
             bucket=settings.s3.bucket,
             endpoint=settings.s3.endpoint,
             content_type="text/html",
             content_disposition="inline",
         )
-    except (ClientError, BotoCoreError, OSError) as e:
+    except (ClientError, BotoCoreError) as e:
         logger.error("S3 error: %s", e)
 
     screenshot_url = await _generate_and_upload_screenshot(
