@@ -10,12 +10,12 @@ router = APIRouter()
 
 
 @router.post("/sites/create", response_model=CreateSiteResponse)
-async def create_site(request: CreateSiteRequest):
+async def create_site(data: CreateSiteRequest):
     now = datetime.now()
     return CreateSiteResponse(
         id=1,
-        title=request.title,
-        prompt=request.prompt,
+        title=data.title,
+        prompt=data.prompt,
         created_at=now,
         updated_at=now,
         view_url="https://google.com",
@@ -25,13 +25,13 @@ async def create_site(request: CreateSiteRequest):
 
 
 @router.post("/sites/{site_id}/generate")
-async def generate_site(site_id: int, request: GenerateSiteRequest, http_request: Request):
+async def generate_site(site_id: int, data: GenerateSiteRequest, http_request: Request):
     s3_client = http_request.app.state.s3_client
     gotenberg_client = http_request.app.state.gotenberg_client
 
     return StreamingResponse(
         generate_site_stream(
-            http_request.app.state, site_id, request.prompt, gotenberg_client, s3_client,
+            http_request.app.state, site_id, data.prompt, gotenberg_client, s3_client,
         ),
         media_type="text/plain",
     )
