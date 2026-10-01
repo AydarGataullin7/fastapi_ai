@@ -91,7 +91,10 @@ async def _upload_site_after_generation(
     screenshot_url = await _generate_and_upload_screenshot(
         site_id, html_code, gotenberg_client, s3_client,
     )
-    state.last_screenshot_url = screenshot_url
+
+    if site_id not in state.sites:
+        state.sites[site_id] = {"prompt": "", "screenshot_url": None}
+    state.sites[site_id]["screenshot_url"] = screenshot_url
 
 
 async def generate_site_stream(
@@ -101,7 +104,9 @@ async def generate_site_stream(
     gotenberg_client: httpx.AsyncClient,
     s3_client,
 ):
-    state.last_prompt = prompt
+    if site_id not in state.sites:
+        state.sites[site_id] = {"prompt": "", "screenshot_url": None}
+    state.sites[site_id]["prompt"] = prompt
 
     generator = AsyncPageGenerator(debug_mode=True)
 
